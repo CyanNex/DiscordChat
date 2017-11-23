@@ -1,0 +1,16 @@
+config:
+  # Discord webhook URL linked to the channel you want the chat to display in.
+  # Explanation on how to create webhooks http://bit.ly/discord-webhooks
+  # You do NOT have to upload an avatar and you can name the webhook whatever
+  # you want, the plugin is not going to use that name and avatar.
+  webhook_url: '[YOUR WEBHOOK URL HERE]'
+  # The username to use when posting things like death, join and leave messages.
+  global_message_username: 'Server Events'
+  # The avatar to use when posting things like death, join and leave messages.
+  global_message_avatar: 'http://i.imgur.com/47GDnM7.png'
+  # Automaticly remove the @ when players type things like @everyone or @here.
+  disable_mention_all: 'true'
+  # Send a message in Discord when somebody dies.
+  enable_death_messages: 'true'
+  # Send a message in Discord when somebody leaves or joins.
+  enable_join_leave_messages: 'true'

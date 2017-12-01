@@ -1,9 +1,27 @@
+######################################################################################
+# To setup the plugin please follow these steps:
+#  1) Insert a webhook URL linked to the channel you want the chat to display in
+#     into the 'webhook_url' field below.
+#     (Explanation on how to create webhooks http://bit.ly/discord-webhooks)
+#  2) Follow the steps below to retrieve a token and paste it in
+#     the 'discord_token' field.
+#  3) Reload or restart your server.
+# For a more detailed guide or if you have questions, please go to
+# the DiscordChat spigot page: http://bit.ly/discordchat-spigot
+######################################################################################
 config:
   # Discord webhook URL linked to the channel you want the chat to display in.
   # Explanation on how to create webhooks http://bit.ly/discord-webhooks
   # You do NOT have to upload an avatar and you can name the webhook whatever
   # you want, the plugin is not going to use that name and avatar.
-  webhook_url: '[YOUR WEBHOOK URL HERE]'
+  webhook_url: 'YOUR WEBHOOK URL HERE'
+  # Follow these steps to generate a token:
+  #  1) Create a new application at https://discordapp.com/developers/applications/me/create
+  #  2) On the application's page, click "Create a Bot User" and confirm
+  #  3) Press 'click to reveal' and copy the token here.
+  #  4) Go to https://discordapp.com/oauth2/authorize?client_id=YOUR-CLIENT-ID-HERE&permissions=11264&scope=bot
+  #     (Make sure to replace YOUR-CLIENT-ID-HERE with your client id (can be found on the application page).
+  discord_token: 'YOUR TOKEN HERE'
   # The username to use when posting things like death, join and leave messages.
   global_message_username: 'Server Events'
   # The avatar to use when posting things like death, join and leave messages.
@@ -14,3 +32,7 @@ config:
   enable_death_messages: 'true'
   # Send a message in Discord when somebody leaves or joins.
   enable_join_leave_messages: 'true'
+  # Format to use when sending messages from Discord to Minecraft.
+  # Can use the Bukkit color codes with the & symbol.
+  # {user} will be replaced with the username and {message} with the message.
+  minecraft_message_format: '[&9Discord&f] <{user}> {message}'

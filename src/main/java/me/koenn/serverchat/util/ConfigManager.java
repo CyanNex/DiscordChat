@@ -1,5 +1,6 @@
-package me.koenn.serverchat;
+package me.koenn.serverchat.util;
 
+import me.koenn.serverchat.Serverchat;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;

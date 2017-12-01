@@ -5,6 +5,7 @@ import me.koenn.serverchat.discord.DiscordEmbed;
 import me.koenn.serverchat.discord.DiscordMessage;
 import me.koenn.serverchat.discord.Webhook;
 import me.koenn.serverchat.util.ConfigManager;
+import me.koenn.serverchat.util.MessageThread;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.TextChannel;
 import org.bukkit.Bukkit;
@@ -41,6 +42,7 @@ public final class Serverchat extends JavaPlugin implements Listener {
 
     private String error;
     private DiscordBot bot;
+    private Thread messageThread;
 
     public static void log(String message) {
         instance.getLogger().info(message);
@@ -78,6 +80,8 @@ public final class Serverchat extends JavaPlugin implements Listener {
                 "VERIFY", "https://i.imgur.com/PVFIJhW.png",
                 String.format("If you see this message, you setup your DiscordChat plugin incorrectly! VERIFY TOKEN: %s", token.toString())
         ));
+
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new MessageThread(), 0, 1);
 
         globalUsername = configManager.getString("global_message_username", "config");
         globalAvatar = configManager.getString("global_message_avatar", "config");
@@ -139,12 +143,10 @@ public final class Serverchat extends JavaPlugin implements Listener {
             }
         }
 
-        webhook.sendMessage(
-                new DiscordMessage(
-                        player.getName(),
-                        avatar, message
-                )
-        );
+        MessageThread.MESSAGE_QUEUE.add(new DiscordMessage(
+                player.getName(),
+                avatar, message
+        ));
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -154,7 +156,7 @@ public final class Serverchat extends JavaPlugin implements Listener {
         }
 
         if (this.enableDeathMessages) {
-            webhook.sendMessage(
+            MessageThread.MESSAGE_QUEUE.add(
                     new DiscordMessage(
                             this.globalUsername, this.globalAvatar,
                             new DiscordEmbed(event.getDeathMessage(), "", RED)
@@ -178,7 +180,7 @@ public final class Serverchat extends JavaPlugin implements Listener {
 
         if (this.enableJoinLeaveMessages) {
             String joinMessage = String.format("%s joined the game", player.getName());
-            webhook.sendMessage(
+            MessageThread.MESSAGE_QUEUE.add(
                     new DiscordMessage(
                             this.globalUsername, this.globalAvatar,
                             new DiscordEmbed(joinMessage, "", GREEN)
@@ -195,7 +197,7 @@ public final class Serverchat extends JavaPlugin implements Listener {
 
         if (this.enableJoinLeaveMessages) {
             String leaveMessage = String.format("%s left the game", event.getPlayer().getName());
-            webhook.sendMessage(
+            MessageThread.MESSAGE_QUEUE.add(
                     new DiscordMessage(
                             this.globalUsername, this.globalAvatar,
                             new DiscordEmbed(leaveMessage, "", RED)

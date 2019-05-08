@@ -6,7 +6,7 @@
 
     <groupId>me.koenn</groupId>
     <artifactId>serverchat</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.4</version>
     <packaging>jar</packaging>
 
     <name>Serverchat</name>
@@ -14,6 +14,33 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <profiles>
+        <profile>
+            <id>bukkit</id>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>src/main/resources/bukkit</directory>
+                        <filtering>true</filtering>
+                    </resource>
+                </resources>
+                <finalName>DiscordChat-${project.version}-Spigot</finalName>
+            </build>
+        </profile>
+        <profile>
+            <id>bungee</id>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>src/main/resources/bungee</directory>
+                        <filtering>true</filtering>
+                    </resource>
+                </resources>
+                <finalName>DiscordChat-${project.version}-Bungee</finalName>
+            </build>
+        </profile>
+    </profiles>
 
     <build>
         <defaultGoal>clean package</defaultGoal>
@@ -38,7 +65,56 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <minimizeJar>true</minimizeJar>
+                            <relocations>
+                                <relocation>
+                                    <pattern>org.apache</pattern>
+                                    <shadedPattern>me.koenn.serverchat.lib.apache</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.jetbrains</pattern>
+                                    <shadedPattern>me.koenn.serverchat.lib.jetbrains</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.slf4j</pattern>
+                                    <shadedPattern>me.koenn.serverchat.lib.slf4j</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>okio</pattern>
+                                    <shadedPattern>me.koenn.serverchat.lib.okio</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>okhttp3</pattern>
+                                    <shadedPattern>me.koenn.serverchat.lib.okhttp3</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>net.dv8tion</pattern>
+                                    <shadedPattern>me.koenn.serverchat.lib.net.dv8tion</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>javax.annotation</pattern>
+                                    <shadedPattern>me.koenn.serverchat.lib.javax.annotation</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>gnu</pattern>
+                                    <shadedPattern>me.koenn.serverchat.lib.gnu</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.iwebpp</pattern>
+                                    <shadedPattern>me.koenn.serverchat.lib.iwepp</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.neovisionaries</pattern>
+                                    <shadedPattern>me.koenn.serverchat.lib.neovisionaries</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.intellij</pattern>
+                                    <shadedPattern>me.koenn.serverchat.lib.intellij</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.json</pattern>
+                                    <shadedPattern>me.koenn.serverchat.lib.json</shadedPattern>
+                                </relocation>
+                            </relocations>
                         </configuration>
                     </execution>
                 </executions>
@@ -46,7 +122,7 @@
         </plugins>
         <resources>
             <resource>
-                <directory>src/main/resources</directory>
+                <directory>src/main/resources/api</directory>
                 <filtering>true</filtering>
             </resource>
         </resources>
@@ -54,16 +130,42 @@
 
     <repositories>
         <repository>
-            <id>sonatype</id>
-            <url>https://oss.sonatype.org/content/groups/public/</url>
+            <id>spigot-repo</id>
+            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+        </repository>
+        <repository>
+            <id>jcenter</id>
+            <name>jcenter-bintray</name>
+            <url>http://jcenter.bintray.com</url>
+        </repository>
+        <repository>
+            <id>bungeecord-repo</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </repository>
     </repositories>
 
     <dependencies>
         <dependency>
-            <groupId>com.destroystokyo.paper</groupId>
-            <artifactId>paper-api</artifactId>
-            <version>1.11.2-R0.1-SNAPSHOT</version>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>1.13.2-R0.1-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.dv8tion</groupId>
+            <artifactId>JDA</artifactId>
+            <version>3.8.3_463</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>club.minnced</groupId>
+                    <artifactId>opus-java</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>net.md-5</groupId>
+            <artifactId>bungeecord-api</artifactId>
+            <version>1.14-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

@@ -1,7 +1,8 @@
-package me.koenn.serverchat.discord;
+package me.koenn.serverchat.api.discord.model;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 public class DiscordMessage {
 
@@ -25,17 +26,17 @@ public class DiscordMessage {
         this.embeds = embeds;
     }
 
-    public JSONObject toJSON() {
-        JSONObject json = new JSONObject();
-        json.put("username", this.username);
-        json.put("avatar_url", this.avatarUrl);
-        json.put("content", this.content);
+    public JsonObject toJSON() {
+        JsonObject json = new JsonObject();
+        json.add("username", new JsonPrimitive(this.username));
+        json.add("avatar_url", new JsonPrimitive(this.avatarUrl));
+        json.add("content", new JsonPrimitive(this.content));
         if (this.embeds != null) {
-            JSONArray embeds = new JSONArray();
+            JsonArray embeds = new JsonArray();
             for (DiscordEmbed embed : this.embeds) {
                 embeds.add(embed.toJSON());
             }
-            json.put("embeds", embeds);
+            json.add("embeds", embeds);
         }
         return json;
     }

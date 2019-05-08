@@ -41,7 +41,7 @@ public final class ServerchatBukkit extends JavaPlugin implements Listener, Mess
         this.api.disable();
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onAsyncPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         this.api.playerChat(player.getName(), player.getUniqueId(), event.getMessage());
@@ -52,7 +52,7 @@ public final class ServerchatBukkit extends JavaPlugin implements Listener, Mess
         this.api.playerDeath(event.getDeathMessage());
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
         this.api.playerJoin(event.getPlayer().getName());
     }

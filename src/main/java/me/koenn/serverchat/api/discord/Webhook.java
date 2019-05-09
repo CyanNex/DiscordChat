@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 public class Webhook {
 
@@ -49,7 +50,7 @@ public class Webhook {
 
         try {
             DataOutputStream outputStream = new DataOutputStream(connection.getOutputStream());
-            outputStream.writeBytes(payload);
+            outputStream.write(payload.getBytes(StandardCharsets.UTF_8));
             outputStream.flush();
             outputStream.close();
         } catch (IOException ex) {

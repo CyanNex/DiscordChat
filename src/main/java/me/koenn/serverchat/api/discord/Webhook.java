@@ -46,11 +46,12 @@ public class Webhook {
         }
 
         String payload = message.toJSON().toString();
-        connection.setRequestProperty("Content-length", String.valueOf(payload.length()));
+        byte[] encodedPayload = payload.getBytes(StandardCharsets.UTF_8);
+        connection.setRequestProperty("Content-length", String.valueOf(encodedPayload.length));
 
         try {
             DataOutputStream outputStream = new DataOutputStream(connection.getOutputStream());
-            outputStream.write(payload.getBytes(StandardCharsets.UTF_8));
+            outputStream.write(encodedPayload);
             outputStream.flush();
             outputStream.close();
         } catch (IOException ex) {

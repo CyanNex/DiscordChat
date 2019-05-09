@@ -25,13 +25,14 @@ public class DiscordBot extends ListenerAdapter {
         try {
             this.jda = new JDABuilder(AccountType.BOT)
                     .setToken(discordToken)
+                    .setAudioEnabled(false)
                     .setGame(Game.listening("to you!"))
                     .build().awaitReady();
             jda.addEventListener(this);
         } catch (LoginException e) {
-            this.api.error("Unable to login to Discord, do you have an internet connection?");
+            this.api.error("Unable to login to Discord, check if your token is correct and if you have an internet connection.");
         } catch (InterruptedException e) {
-            this.api.error("Thread interrupted! Please restart your server!");
+            this.api.error("Discord Bot thread interrupted! Please restart your server!");
         }
     }
 
@@ -43,24 +44,31 @@ public class DiscordBot extends ListenerAdapter {
         TextChannel channel = event.getChannel();
 
         if (this.guild == 0 && author.getName().equals("VERIFY")) {
-            String token = message.getContentRaw().split(" ")[message.getContentRaw().split(" ").length - 1].trim();
+            String content = message.getContentRaw();
+            String[] split = content.split(" ");
+            String token = split[split.length - 1].trim();
             if (this.verifyToken.equals(token)) {
-                this.guild = guild.getIdLong();
-                this.channel = channel.getIdLong();
-                this.api.log("Successfully linked to Discord server \'" + guild.getName() + "\'!");
-                channel.sendMessage("**Connected to Minecraft server!**").queue();
                 message.delete().queue();
+                this.linkToChannel(channel);
+                return;
             }
-            return;
         }
 
-        if (guild.getIdLong() != this.guild || channel.getIdLong() != this.channel || author.isBot()) {
-            return;
+        if (guild.getIdLong() == this.guild && channel.getIdLong() == this.channel && !author.isBot()) {
+            Member member = guild.getMember(author);
+            String name = member.getNickname() == null ? author.getName() : member.getNickname();
+            this.api.userChat(name, message.getContentDisplay());
         }
+    }
 
-        Member member = guild.getMember(author);
-        String name = member.getNickname() == null ? author.getName() : member.getNickname();
-        this.api.userChat(name, message.getContentDisplay());
+    private void linkToChannel(TextChannel channel) {
+        this.guild = channel.getGuild().getIdLong();
+        this.channel = channel.getIdLong();
+        this.api.log(String.format(
+                "Successfully linked to Discord server \'%s#%s\'!",
+                channel.getGuild().getName(), channel.getName()
+        ));
+        channel.sendMessage("**Connected to Minecraft server!**").queue();
     }
 
     public JDA getJda() {

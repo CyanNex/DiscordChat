@@ -2,3 +2,4 @@ name: 'DiscordChat'
 version: '1.5'
 main: 'me.koenn.serverchat.bukkit.ServerchatBukkit'
 authors: ['Koenn']
+api-version: '1.15'

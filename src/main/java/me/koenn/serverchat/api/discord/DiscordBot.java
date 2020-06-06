@@ -19,6 +19,8 @@ public class DiscordBot extends ListenerAdapter {
     private long channel;
     private JDA jda;
 
+    private String status;
+
     public DiscordBot(String discordToken, String verifyToken, ServerchatAPI api) {
         this.verifyToken = verifyToken;
         this.api = api;
@@ -69,6 +71,16 @@ public class DiscordBot extends ListenerAdapter {
                 channel.getGuild().getName(), channel.getName()
         ));
         channel.sendMessage("**Connected to Minecraft server!**").queue();
+    }
+
+    public void updateStatus(String format, Game.GameType type, int playerCount) {
+        if (this.jda != null) {
+            String status = format.replace("{players}", String.valueOf(playerCount));
+            if (!status.equals(this.status)) {
+                this.status = status;
+                this.jda.getPresence().setGame(Game.of(type, this.status));
+            }
+        }
     }
 
     public JDA getJda() {

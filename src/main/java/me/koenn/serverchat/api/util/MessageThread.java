@@ -2,8 +2,10 @@ package me.koenn.serverchat.api.util;
 
 import me.koenn.serverchat.api.ServerchatAPI;
 import me.koenn.serverchat.api.discord.model.DiscordMessage;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedList;
+import java.util.Objects;
 
 public class MessageThread implements Runnable {
 
@@ -11,8 +13,8 @@ public class MessageThread implements Runnable {
 
     private final ServerchatAPI api;
 
-    public MessageThread(ServerchatAPI api) {
-        this.api = api;
+    public MessageThread(@NotNull ServerchatAPI api) {
+        this.api = Objects.requireNonNull(api);
     }
 
     @Override

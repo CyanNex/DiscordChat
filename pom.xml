@@ -6,7 +6,7 @@
 
     <groupId>me.koenn</groupId>
     <artifactId>serverchat</artifactId>
-    <version>1.4.2</version>
+    <version>1.5</version>
     <packaging>jar</packaging>
 
     <name>Serverchat</name>
@@ -14,33 +14,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
-    <profiles>
-        <profile>
-            <id>bukkit</id>
-            <build>
-                <resources>
-                    <resource>
-                        <directory>src/main/resources/bukkit</directory>
-                        <filtering>true</filtering>
-                    </resource>
-                </resources>
-                <finalName>DiscordChat-${project.version}-Spigot</finalName>
-            </build>
-        </profile>
-        <profile>
-            <id>bungee</id>
-            <build>
-                <resources>
-                    <resource>
-                        <directory>src/main/resources/bungee</directory>
-                        <filtering>true</filtering>
-                    </resource>
-                </resources>
-                <finalName>DiscordChat-${project.version}-Bungee</finalName>
-            </build>
-        </profile>
-    </profiles>
 
     <build>
         <defaultGoal>clean package</defaultGoal>
@@ -122,10 +95,11 @@
         </plugins>
         <resources>
             <resource>
-                <directory>src/main/resources/api</directory>
+                <directory>src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
         </resources>
+        <finalName>DiscordChat-${project.version}-Universal</finalName>
     </build>
 
     <repositories>
@@ -152,7 +126,7 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.13.2-R0.1-SNAPSHOT</version>
+            <version>1.15.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -170,7 +144,7 @@
         <dependency>
             <groupId>net.md-5</groupId>
             <artifactId>bungeecord-api</artifactId>
-            <version>1.14-SNAPSHOT</version>
+            <version>1.15-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

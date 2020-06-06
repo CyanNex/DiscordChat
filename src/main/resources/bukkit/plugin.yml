@@ -1,4 +1,0 @@
-name: 'DiscordChat'
-version: '1.4.2'
-main: 'me.koenn.serverchat.bukkit.ServerchatBukkit'
-authors: ['Koenn']

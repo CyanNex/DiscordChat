@@ -39,3 +39,10 @@ config:
   # Can use the Bukkit color codes with the & symbol.
   # {user} will be replaced with the username and {message} with the message.
   minecraft_message_format: '[&9Discord&f] <{user}> {message}'
+  # The status message showing up in the player list for the bot.
+  # {players} will be replaced with the online player count.
+  # Color codes are NOT supported.
+  discord_status_format: 'with {players} players online'
+  # The discord status type showing up in the player list for the bot.
+  # Can be 'playing', 'listening' or 'watching'
+  discord_status_type: 'playing'

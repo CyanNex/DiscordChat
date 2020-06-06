@@ -10,23 +10,36 @@ import net.md_5.bungee.api.event.PlayerDisconnectEvent;
 import net.md_5.bungee.api.event.ServerConnectedEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
+import net.md_5.bungee.api.plugin.PluginDescription;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
 import net.md_5.bungee.event.EventHandler;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public final class ServerchatBungee extends Plugin implements Listener, MessageCallback {
 
     public ServerchatAPI api;
 
+    private ScheduledFuture<?> messageThreadTask;
+
     @Override
     public void onEnable() {
+        PluginDescription description = this.getDescription();
+        this.getLogger().info(String.format("Loading %s v%s for BungeeCord %s",
+                description.getName(), description.getVersion(),
+                this.getProxy().getVersion()
+        ));
+
         if (!this.getDataFolder().exists()) {
             this.getDataFolder().mkdir();
         }
@@ -52,27 +65,34 @@ public final class ServerchatBungee extends Plugin implements Listener, MessageC
         this.api.init();
 
         ProxyServer.getInstance().getPluginManager().registerListener(this, this);
-        ProxyServer.getInstance().getScheduler().schedule(this, this.api.getMessageThread(), 0, 25, TimeUnit.MILLISECONDS);
+        ProxyServer.getInstance().getScheduler().schedule(this, () -> this.api.updatePlayerCount(ProxyServer.getInstance().getOnlineCount()), 0, 3, TimeUnit.SECONDS);
+
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        this.messageThreadTask = executor.scheduleAtFixedRate(() -> this.api.getMessageThread().run(), 0, 40, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void onDisable() {
         this.api.disable();
+        this.messageThreadTask.cancel(true);
     }
 
     @EventHandler
-    public void onChat(ChatEvent event) {
+    public void onChat(@NotNull ChatEvent event) {
         ProxiedPlayer player = (ProxiedPlayer) event.getSender();
-        this.api.playerChat(player.getName(), player.getUniqueId(), event.getMessage());
+        String message = event.getMessage();
+        if (!message.startsWith("/")) {
+            this.api.playerChat(player.getName(), player.getUniqueId(), event.getMessage());
+        }
     }
 
     @EventHandler
-    public void onServerConnected(ServerConnectedEvent event) {
+    public void onServerConnected(@NotNull ServerConnectedEvent event) {
         this.api.playerJoin(event.getPlayer().getName(), event.getServer().getInfo().getName());
     }
 
     @EventHandler
-    public void onPlayerDisconnect(PlayerDisconnectEvent event) {
+    public void onPlayerDisconnect(@NotNull PlayerDisconnectEvent event) {
         if (event.getPlayer() == null || event.getPlayer().getServer() == null) {
             return;
         }
@@ -80,7 +100,7 @@ public final class ServerchatBungee extends Plugin implements Listener, MessageC
     }
 
     @Override
-    public void message(String message) {
+    public void message(@NotNull String message) {
         ProxyServer.getInstance().broadcast(new TextComponent(message));
     }
 }

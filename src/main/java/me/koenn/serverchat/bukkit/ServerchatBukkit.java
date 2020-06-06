@@ -11,7 +11,9 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 
@@ -21,11 +23,17 @@ public final class ServerchatBukkit extends JavaPlugin implements Listener, Mess
 
     @Override
     public void onEnable() {
+        PluginDescriptionFile description = this.getDescription();
+        this.getLogger().info(String.format("Loading %s v%s for Spigot %s",
+                description.getName(), description.getVersion(),
+                Bukkit.getServer().getBukkitVersion()
+        ));
+
         if (!this.getDataFolder().exists()) {
             this.getDataFolder().mkdir();
         }
 
-        if (!(new File(this.getDataFolder(), "api/config.yml")).exists()) {
+        if (!(new File(this.getDataFolder(), "config.yml")).exists()) {
             this.saveDefaultConfig();
         }
 
@@ -33,7 +41,8 @@ public final class ServerchatBukkit extends JavaPlugin implements Listener, Mess
         this.api.init();
 
         Bukkit.getPluginManager().registerEvents(this, this);
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, this.api.getMessageThread(), 0, 1);
+        Bukkit.getScheduler().runTaskTimerAsynchronously(this, this.api.getMessageThread(), 0, 1);
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, () -> this.api.updatePlayerCount(Bukkit.getOnlinePlayers().size()), 0, 50);
     }
 
     @Override
@@ -42,28 +51,32 @@ public final class ServerchatBukkit extends JavaPlugin implements Listener, Mess
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    public void onAsyncPlayerChat(AsyncPlayerChatEvent event) {
+    public void onAsyncPlayerChat(@NotNull AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         this.api.playerChat(player.getName(), player.getUniqueId(), event.getMessage());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerDeath(PlayerDeathEvent event) {
-        this.api.playerDeath(event.getDeathMessage());
+    public void onPlayerDeath(@NotNull PlayerDeathEvent event) {
+        String deathMessage = event.getDeathMessage();
+        if (deathMessage == null) {
+            deathMessage = String.format("%s died", event.getEntity().getName());
+        }
+        this.api.playerDeath(deathMessage);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    public void onPlayerJoin(PlayerJoinEvent event) {
+    public void onPlayerJoin(@NotNull PlayerJoinEvent event) {
         this.api.playerJoin(event.getPlayer().getName());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerQuit(PlayerQuitEvent event) {
+    public void onPlayerQuit(@NotNull PlayerQuitEvent event) {
         this.api.playerQuit(event.getPlayer().getName());
     }
 
     @Override
-    public void message(String message) {
+    public void message(@NotNull String message) {
         Bukkit.broadcastMessage(message);
     }
 }

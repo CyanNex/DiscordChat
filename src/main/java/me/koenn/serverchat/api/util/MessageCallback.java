@@ -1,6 +1,8 @@
 package me.koenn.serverchat.api.util;
 
+import org.jetbrains.annotations.NotNull;
+
 public interface MessageCallback {
 
-    void message(String message);
+    void message(@NotNull String message);
 }

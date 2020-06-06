@@ -7,10 +7,13 @@ import me.koenn.serverchat.api.discord.model.DiscordMessage;
 import me.koenn.serverchat.api.util.IConfigManager;
 import me.koenn.serverchat.api.util.MessageCallback;
 import me.koenn.serverchat.api.util.MessageThread;
+import net.dv8tion.jda.core.entities.Game;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.TextChannel;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.MalformedURLException;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -29,6 +32,8 @@ public class ServerchatAPI {
     private final String minecraftMessageFormat;
     private final String webhookURL;
     private final String discordToken;
+    private final String discordStatusFormat;
+    private final Game.GameType discordStatusType;
 
     private final MessageThread messageThread = new MessageThread(this);
     private final MessageCallback callback;
@@ -37,7 +42,7 @@ public class ServerchatAPI {
     private Webhook webhook;
     private DiscordBot bot;
 
-    public ServerchatAPI(IConfigManager configManager, Logger logger, MessageCallback callback) {
+    public ServerchatAPI(@NotNull IConfigManager configManager, @NotNull Logger logger, @NotNull MessageCallback callback) {
         this.globalUsername = configManager.getString("global_message_username", "config");
         this.globalAvatar = configManager.getString("global_message_avatar", "config");
         this.disableMentionAll = Boolean.parseBoolean(configManager.getString("disable_mention_all", "config"));
@@ -46,9 +51,12 @@ public class ServerchatAPI {
         this.minecraftMessageFormat = parseColor(configManager.getString("minecraft_message_format", "config"));
         this.webhookURL = configManager.getString("webhook_url", "config");
         this.discordToken = configManager.getString("discord_token", "config");
+        this.discordStatusFormat = configManager.getString("discord_status_format", "config");
+        this.discordStatusType = Game.GameType.valueOf(configManager.getString("discord_status_type", "config")
+                .toUpperCase().replace("PLAYING", "DEFAULT"));
 
-        this.logger = logger;
-        this.callback = callback;
+        this.logger = Objects.requireNonNull(logger);
+        this.callback = Objects.requireNonNull(callback);
     }
 
     public void init() {
@@ -58,7 +66,7 @@ public class ServerchatAPI {
         }
 
         try {
-            webhook = new Webhook(this.webhookURL, this);
+            this.webhook = new Webhook(this.webhookURL, this);
         } catch (MalformedURLException e) {
             this.error("Your provided Discord webhook URL is invalid!");
             return;
@@ -66,8 +74,9 @@ public class ServerchatAPI {
 
         UUID token = UUID.randomUUID();
         this.bot = new DiscordBot(this.discordToken, token.toString(), this);
+        this.bot.updateStatus(this.discordStatusFormat, this.discordStatusType, 0);
 
-        webhook.sendMessage(new DiscordMessage(
+        this.webhook.sendMessage(new DiscordMessage(
                 "VERIFY", "https://i.imgur.com/PVFIJhW.png",
                 String.format("If you see this message, you setup your DiscordChat plugin incorrectly! VERIFY TOKEN: %s", token.toString())
         ));
@@ -84,8 +93,8 @@ public class ServerchatAPI {
         }
     }
 
-    public void playerChat(String playerName, UUID playerUUID, String message) {
-        String avatar = String.format("https://crafatar.com/avatars/%s?overlay", String.valueOf(playerUUID));
+    public void playerChat(@NotNull String playerName, @NotNull UUID playerUUID, @NotNull String message) {
+        String avatar = String.format("https://crafatar.com/avatars/%s?overlay", playerUUID);
         message = disableMentionAll ? message.replace("@everyone", "everyone").replace("@here", "here") : message;
         TextChannel channel = bot.getJda().getGuildById(bot.getGuild()).getTextChannelById(bot.getChannel());
 
@@ -100,7 +109,7 @@ public class ServerchatAPI {
         MessageThread.MESSAGE_QUEUE.add(new DiscordMessage(playerName, avatar, message));
     }
 
-    public void playerDeath(String deathMessage) {
+    public void playerDeath(@NotNull String deathMessage) {
         if (this.enableDeathMessages) {
             MessageThread.MESSAGE_QUEUE.add(
                     new DiscordMessage(
@@ -111,11 +120,11 @@ public class ServerchatAPI {
         }
     }
 
-    public void playerJoin(String playerName) {
+    public void playerJoin(@NotNull String playerName) {
         this.playerJoin(playerName, "the game");
     }
 
-    public void playerJoin(String playerName, String serverName) {
+    public void playerJoin(@NotNull String playerName, @NotNull String serverName) {
         if (this.enableJoinLeaveMessages) {
             String joinMessage = String.format("%s joined %s", playerName, serverName);
             MessageThread.MESSAGE_QUEUE.add(
@@ -127,11 +136,11 @@ public class ServerchatAPI {
         }
     }
 
-    public void playerQuit(String playerName) {
+    public void playerQuit(@NotNull String playerName) {
         this.playerQuit(playerName, "the game");
     }
 
-    public void playerQuit(String playerName, String serverName) {
+    public void playerQuit(@NotNull String playerName, @NotNull String serverName) {
         if (this.enableJoinLeaveMessages) {
             String leaveMessage = String.format("%s left %s", playerName, serverName);
             MessageThread.MESSAGE_QUEUE.add(
@@ -143,14 +152,14 @@ public class ServerchatAPI {
         }
     }
 
-    public void userChat(String userName, String message) {
+    public void userChat(@NotNull String userName, @NotNull String message) {
         String formatted = this.minecraftMessageFormat
                 .replace("{user}", userName)
                 .replace("{message}", stripColor(message));
         this.callback.message(formatted);
     }
 
-    public void error(String message) {
+    public void error(@NotNull String message) {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < message.length(); i++) {
             builder.append("#");
@@ -162,7 +171,7 @@ public class ServerchatAPI {
         this.logger.severe(line);
     }
 
-    private static String parseColor(String string) {
+    private static @NotNull String parseColor(@NotNull String string) {
         char[] b = string.toCharArray();
 
         for (int i = 0; i < b.length - 1; ++i) {
@@ -175,19 +184,25 @@ public class ServerchatAPI {
         return new String(b);
     }
 
-    private static String stripColor(String string) {
-        return string == null ? null : STRIP_COLOR_PATTERN.matcher(string).replaceAll("");
+    private static @NotNull String stripColor(@NotNull String string) {
+        return STRIP_COLOR_PATTERN.matcher(string).replaceAll("");
     }
 
-    public void log(String message) {
-        this.logger.info(message);
+    public void updatePlayerCount(int playerCount) {
+        if (this.bot != null) {
+            this.bot.updateStatus(this.discordStatusFormat, this.discordStatusType, playerCount);
+        }
     }
 
-    public MessageThread getMessageThread() {
-        return this.messageThread;
+    public void log(@NotNull String message) {
+        this.logger.info(Objects.requireNonNull(message));
     }
 
-    public Webhook getWebhook() {
-        return this.webhook;
+    public @NotNull MessageThread getMessageThread() {
+        return Objects.requireNonNull(this.messageThread);
+    }
+
+    public @NotNull Webhook getWebhook() {
+        return Objects.requireNonNull(this.webhook);
     }
 }

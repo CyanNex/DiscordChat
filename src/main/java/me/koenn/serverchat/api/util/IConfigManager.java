@@ -1,6 +1,8 @@
 package me.koenn.serverchat.api.util;
 
+import org.jetbrains.annotations.NotNull;
+
 public interface IConfigManager {
 
-    String getString(String key, String... path);
+    @NotNull String getString(@NotNull String key, @NotNull String... path);
 }

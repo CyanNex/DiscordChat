@@ -2,6 +2,7 @@ package me.koenn.serverchat.api.discord;
 
 import me.koenn.serverchat.api.ServerchatAPI;
 import me.koenn.serverchat.api.discord.model.DiscordMessage;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -9,6 +10,8 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.Optional;
 
 public class Webhook {
 
@@ -16,12 +19,12 @@ public class Webhook {
     private final URL url;
     private final ServerchatAPI api;
 
-    public Webhook(String url, ServerchatAPI api) throws MalformedURLException {
-        this.url = new URL(url);
-        this.api = api;
+    public Webhook(@NotNull String url, @NotNull ServerchatAPI api) throws MalformedURLException {
+        this.url = new URL(Objects.requireNonNull(url));
+        this.api = Objects.requireNonNull(api);
     }
 
-    private HttpURLConnection connect() {
+    private Optional<HttpURLConnection> connect() {
         try {
             HttpURLConnection connection = (HttpURLConnection) this.url.openConnection();
 
@@ -31,26 +34,31 @@ public class Webhook {
             connection.setDoOutput(true);
             connection.setDoInput(true);
 
-            return connection;
+            return Optional.of(connection);
         } catch (IOException ex) {
             ex.printStackTrace();
-            return null;
+            return Optional.empty();
         }
     }
 
-    public void sendMessage(DiscordMessage message) {
-        HttpURLConnection connection = this.connect();
-        if (connection == null) {
+    public void sendMessage(@NotNull DiscordMessage message) {
+        Objects.requireNonNull(message);
+
+        Optional<HttpURLConnection> connection = this.connect();
+        if (!connection.isPresent()) {
             this.api.error("Unable to connect to Discord!");
             return;
         }
+        HttpURLConnection discordConnection = connection.get();
 
         String payload = message.toJSON().toString();
         byte[] encodedPayload = payload.getBytes(StandardCharsets.UTF_8);
-        connection.setRequestProperty("Content-length", String.valueOf(encodedPayload.length));
+        discordConnection.setRequestProperty("Content-Length", String.valueOf(encodedPayload.length));
+        discordConnection.setConnectTimeout(1000);
+        discordConnection.setReadTimeout(1000);
 
         try {
-            DataOutputStream outputStream = new DataOutputStream(connection.getOutputStream());
+            DataOutputStream outputStream = new DataOutputStream(discordConnection.getOutputStream());
             outputStream.write(encodedPayload);
             outputStream.flush();
             outputStream.close();
@@ -60,8 +68,8 @@ public class Webhook {
         }
 
         try {
-            if (connection.getResponseCode() != 200 && connection.getResponseCode() != 204) {
-                this.api.error(String.format("Got response code %s from Discord!", connection.getResponseCode()));
+            if (discordConnection.getResponseCode() != 200 && discordConnection.getResponseCode() != 204) {
+                this.api.error(String.format("Got response code %s from Discord!", discordConnection.getResponseCode()));
             }
         } catch (IOException ex) {
             this.api.error("Unable to connect to Discord!");

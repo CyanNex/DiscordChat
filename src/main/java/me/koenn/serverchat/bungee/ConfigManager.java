@@ -2,6 +2,7 @@ package me.koenn.serverchat.bungee;
 
 import me.koenn.serverchat.api.util.IConfigManager;
 import net.md_5.bungee.config.Configuration;
+import org.jetbrains.annotations.NotNull;
 
 import static net.md_5.bungee.api.ChatColor.translateAlternateColorCodes;
 
@@ -20,7 +21,7 @@ public class ConfigManager implements IConfigManager {
      * @param path Path to get the String from
      * @return String value
      */
-    public String getString(String key, String... path) {
+    public @NotNull String getString(@NotNull String key, @NotNull String @NotNull ... path) {
         return translateAlternateColorCodes('&', getSection(path).get(key).toString());
     }
 
@@ -30,7 +31,7 @@ public class ConfigManager implements IConfigManager {
      * @param path Path to get the section from
      * @return ConfigurationSection object instance
      */
-    private Configuration getSection(String... path) {
+    private @NotNull Configuration getSection(@NotNull String... path) {
         Configuration section = null;
         for (String p : path) {
             if (section != null) {

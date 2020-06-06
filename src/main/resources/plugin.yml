@@ -1,4 +1,4 @@
 name: 'DiscordChat'
 version: '1.5'
-main: 'me.koenn.serverchat.bungee.ServerchatBungee'
+main: 'me.koenn.serverchat.bukkit.ServerchatBukkit'
 authors: ['Koenn']

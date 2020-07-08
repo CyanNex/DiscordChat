@@ -23,14 +23,13 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public final class ServerchatBungee extends Plugin implements Listener, MessageCallback {
 
     public ServerchatAPI api;
 
-    private ScheduledFuture<?> messageThreadTask;
+    private ScheduledExecutorService service;
 
     @Override
     public void onEnable() {
@@ -65,16 +64,16 @@ public final class ServerchatBungee extends Plugin implements Listener, MessageC
         this.api.init();
 
         ProxyServer.getInstance().getPluginManager().registerListener(this, this);
-        ProxyServer.getInstance().getScheduler().schedule(this, () -> this.api.updatePlayerCount(ProxyServer.getInstance().getOnlineCount()), 0, 3, TimeUnit.SECONDS);
 
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        this.messageThreadTask = executor.scheduleAtFixedRate(() -> this.api.getMessageThread().run(), 0, 40, TimeUnit.MILLISECONDS);
+        this.service = Executors.newScheduledThreadPool(2);
+        this.service.submit(this.api.getMessageThread());
+        this.service.scheduleAtFixedRate(this::updatePlayerCount, 0, 1, TimeUnit.SECONDS);
     }
 
     @Override
     public void onDisable() {
         this.api.disable();
-        this.messageThreadTask.cancel(true);
+        this.service.shutdownNow();
     }
 
     @EventHandler
@@ -102,5 +101,9 @@ public final class ServerchatBungee extends Plugin implements Listener, MessageC
     @Override
     public void message(@NotNull String message) {
         ProxyServer.getInstance().broadcast(new TextComponent(message));
+    }
+
+    private void updatePlayerCount() {
+        this.api.updatePlayerCount(ProxyServer.getInstance().getOnlineCount());
     }
 }

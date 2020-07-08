@@ -4,15 +4,15 @@ import me.koenn.serverchat.api.discord.DiscordBot;
 import me.koenn.serverchat.api.discord.Webhook;
 import me.koenn.serverchat.api.discord.model.DiscordEmbed;
 import me.koenn.serverchat.api.discord.model.DiscordMessage;
+import me.koenn.serverchat.api.thread.IMessageThread;
+import me.koenn.serverchat.api.thread.MessageThread;
 import me.koenn.serverchat.api.util.IConfigManager;
 import me.koenn.serverchat.api.util.MessageCallback;
-import me.koenn.serverchat.api.util.MessageThread;
 import net.dv8tion.jda.core.entities.Game;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.TextChannel;
 import org.jetbrains.annotations.NotNull;
 
-import java.net.MalformedURLException;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -35,14 +35,14 @@ public class ServerchatAPI {
     private final String discordStatusFormat;
     private final Game.GameType discordStatusType;
 
-    private final MessageThread messageThread = new MessageThread(this);
-    private final MessageCallback callback;
+    private final IMessageThread messageThread = new MessageThread(this);
+    private final MessageCallback gameMessageCallback;
     private final Logger logger;
 
     private Webhook webhook;
     private DiscordBot bot;
 
-    public ServerchatAPI(@NotNull IConfigManager configManager, @NotNull Logger logger, @NotNull MessageCallback callback) {
+    public ServerchatAPI(@NotNull IConfigManager configManager, @NotNull Logger logger, @NotNull MessageCallback gameMessageCallback) {
         this.globalUsername = configManager.getString("global_message_username", "config");
         this.globalAvatar = configManager.getString("global_message_avatar", "config");
         this.disableMentionAll = Boolean.parseBoolean(configManager.getString("disable_mention_all", "config"));
@@ -56,7 +56,7 @@ public class ServerchatAPI {
                 .toUpperCase().replace("PLAYING", "DEFAULT"));
 
         this.logger = Objects.requireNonNull(logger);
-        this.callback = Objects.requireNonNull(callback);
+        this.gameMessageCallback = Objects.requireNonNull(gameMessageCallback);
     }
 
     public void init() {
@@ -65,12 +65,7 @@ public class ServerchatAPI {
             return;
         }
 
-        try {
-            this.webhook = new Webhook(this.webhookURL, this);
-        } catch (MalformedURLException e) {
-            this.error("Your provided Discord webhook URL is invalid!");
-            return;
-        }
+        this.webhook = new Webhook(this.webhookURL, this);
 
         UUID token = UUID.randomUUID();
         this.bot = new DiscordBot(this.discordToken, token.toString(), this);
@@ -84,19 +79,18 @@ public class ServerchatAPI {
 
     public void disable() {
         if (this.bot != null && this.bot.getJda() != null) {
-            this.bot.getJda()
-                    .getGuildById(this.bot.getGuild())
-                    .getTextChannelById(this.bot.getChannel())
-                    .sendMessage("**Disconnected from Minecraft server!**")
-                    .queue();
             this.bot.getJda().shutdown();
+            this.webhook.sendMessage(new DiscordMessage(
+                    this.globalUsername, this.globalAvatar,
+                    "**Disconnected from Minecraft server!**"
+            ));
         }
     }
 
     public void playerChat(@NotNull String playerName, @NotNull UUID playerUUID, @NotNull String message) {
         String avatar = String.format("https://crafatar.com/avatars/%s?overlay", playerUUID);
-        message = disableMentionAll ? message.replace("@everyone", "everyone").replace("@here", "here") : message;
-        TextChannel channel = bot.getJda().getGuildById(bot.getGuild()).getTextChannelById(bot.getChannel());
+        message = this.disableMentionAll ? message.replace("@everyone", "everyone").replace("@here", "here") : message;
+        TextChannel channel = this.bot.getJda().getGuildById(this.bot.getGuild()).getTextChannelById(this.bot.getChannel());
 
         for (Member member : channel.getMembers()) {
             String mention = "@" + member.getEffectiveName();
@@ -106,12 +100,12 @@ public class ServerchatAPI {
             }
         }
 
-        MessageThread.MESSAGE_QUEUE.add(new DiscordMessage(playerName, avatar, message));
+        this.messageThread.enqueue(new DiscordMessage(playerName, avatar, message));
     }
 
     public void playerDeath(@NotNull String deathMessage) {
         if (this.enableDeathMessages) {
-            MessageThread.MESSAGE_QUEUE.add(
+            this.messageThread.enqueue(
                     new DiscordMessage(
                             this.globalUsername, this.globalAvatar,
                             new DiscordEmbed(deathMessage, "", RED)
@@ -127,7 +121,7 @@ public class ServerchatAPI {
     public void playerJoin(@NotNull String playerName, @NotNull String serverName) {
         if (this.enableJoinLeaveMessages) {
             String joinMessage = String.format("%s joined %s", playerName, serverName);
-            MessageThread.MESSAGE_QUEUE.add(
+            this.messageThread.enqueue(
                     new DiscordMessage(
                             this.globalUsername, this.globalAvatar,
                             new DiscordEmbed(joinMessage, "", GREEN)
@@ -143,7 +137,7 @@ public class ServerchatAPI {
     public void playerQuit(@NotNull String playerName, @NotNull String serverName) {
         if (this.enableJoinLeaveMessages) {
             String leaveMessage = String.format("%s left %s", playerName, serverName);
-            MessageThread.MESSAGE_QUEUE.add(
+            this.messageThread.enqueue(
                     new DiscordMessage(
                             this.globalUsername, this.globalAvatar,
                             new DiscordEmbed(leaveMessage, "", RED)
@@ -156,7 +150,7 @@ public class ServerchatAPI {
         String formatted = this.minecraftMessageFormat
                 .replace("{user}", userName)
                 .replace("{message}", stripColor(message));
-        this.callback.message(formatted);
+        this.gameMessageCallback.message(formatted);
     }
 
     public void error(@NotNull String message) {
@@ -198,7 +192,7 @@ public class ServerchatAPI {
         this.logger.info(Objects.requireNonNull(message));
     }
 
-    public @NotNull MessageThread getMessageThread() {
+    public @NotNull IMessageThread getMessageThread() {
         return Objects.requireNonNull(this.messageThread);
     }
 

@@ -7,8 +7,10 @@ import net.dv8tion.jda.core.JDABuilder;
 import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
+import org.jetbrains.annotations.NotNull;
 
 import javax.security.auth.login.LoginException;
+import java.util.Objects;
 
 public class DiscordBot extends ListenerAdapter {
 
@@ -21,16 +23,16 @@ public class DiscordBot extends ListenerAdapter {
 
     private String status;
 
-    public DiscordBot(String discordToken, String verifyToken, ServerchatAPI api) {
-        this.verifyToken = verifyToken;
-        this.api = api;
+    public DiscordBot(@NotNull String discordToken, @NotNull String verifyToken, @NotNull ServerchatAPI api) {
+        this.verifyToken = Objects.requireNonNull(verifyToken);
+        this.api = Objects.requireNonNull(api);
         try {
             this.jda = new JDABuilder(AccountType.BOT)
-                    .setToken(discordToken)
+                    .setToken(Objects.requireNonNull(discordToken))
                     .setAudioEnabled(false)
                     .setGame(Game.listening("to you!"))
                     .build().awaitReady();
-            jda.addEventListener(this);
+            this.jda.addEventListener(this);
         } catch (LoginException e) {
             this.api.error("Unable to login to Discord, check if your token is correct and if you have an internet connection.");
         } catch (InterruptedException e) {
@@ -39,7 +41,7 @@ public class DiscordBot extends ListenerAdapter {
     }
 
     @Override
-    public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
+    public void onGuildMessageReceived(@NotNull GuildMessageReceivedEvent event) {
         User author = event.getAuthor();
         Guild guild = event.getGuild();
         Message message = event.getMessage();
@@ -63,22 +65,22 @@ public class DiscordBot extends ListenerAdapter {
         }
     }
 
-    private void linkToChannel(TextChannel channel) {
+    private void linkToChannel(@NotNull TextChannel channel) {
         this.guild = channel.getGuild().getIdLong();
         this.channel = channel.getIdLong();
         this.api.log(String.format(
-                "Successfully linked to Discord server \'%s#%s\'!",
+                "Successfully linked to Discord server '%s#%s'!",
                 channel.getGuild().getName(), channel.getName()
         ));
         channel.sendMessage("**Connected to Minecraft server!**").queue();
     }
 
-    public void updateStatus(String format, Game.GameType type, int playerCount) {
+    public void updateStatus(@NotNull String format, @NotNull Game.GameType type, int playerCount) {
         if (this.jda != null) {
             String status = format.replace("{players}", String.valueOf(playerCount));
             if (!status.equals(this.status)) {
                 this.status = status;
-                this.jda.getPresence().setGame(Game.of(type, this.status));
+                this.jda.getPresence().setGame(Game.of(Objects.requireNonNull(type), this.status));
             }
         }
     }

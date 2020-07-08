@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-public class DiscordMessage {
+public class DiscordMessage implements IDiscordMessage {
 
     private final String username;
     private final String avatarUrl;
@@ -29,6 +29,7 @@ public class DiscordMessage {
         this.embeds = Objects.requireNonNull(embeds);
     }
 
+    @Override
     public @NotNull JsonObject toJSON() {
         JsonObject json = new JsonObject();
         json.add("username", new JsonPrimitive(this.username));

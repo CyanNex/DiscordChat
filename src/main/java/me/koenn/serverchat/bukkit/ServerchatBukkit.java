@@ -16,10 +16,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public final class ServerchatBukkit extends JavaPlugin implements Listener, MessageCallback {
 
     public ServerchatAPI api;
+    private ScheduledExecutorService service;
 
     @Override
     public void onEnable() {
@@ -41,13 +45,16 @@ public final class ServerchatBukkit extends JavaPlugin implements Listener, Mess
         this.api.init();
 
         Bukkit.getPluginManager().registerEvents(this, this);
-        Bukkit.getScheduler().runTaskTimerAsynchronously(this, this.api.getMessageThread(), 0, 1);
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, () -> this.api.updatePlayerCount(Bukkit.getOnlinePlayers().size()), 0, 50);
+
+        this.service = Executors.newScheduledThreadPool(2);
+        this.service.submit(this.api.getMessageThread());
+        this.service.scheduleAtFixedRate(this::updatePlayerCount, 0, 1, TimeUnit.SECONDS);
     }
 
     @Override
     public void onDisable() {
         this.api.disable();
+        this.service.shutdownNow();
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
@@ -78,5 +85,9 @@ public final class ServerchatBukkit extends JavaPlugin implements Listener, Mess
     @Override
     public void message(@NotNull String message) {
         Bukkit.broadcastMessage(message);
+    }
+
+    private void updatePlayerCount() {
+        this.api.updatePlayerCount(Bukkit.getOnlinePlayers().size());
     }
 }

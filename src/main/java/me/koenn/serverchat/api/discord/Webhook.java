@@ -1,76 +1,74 @@
 package me.koenn.serverchat.api.discord;
 
 import me.koenn.serverchat.api.ServerchatAPI;
-import me.koenn.serverchat.api.discord.model.DiscordMessage;
+import me.koenn.serverchat.api.discord.model.IDiscordMessage;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-import java.util.Optional;
 
-public class Webhook {
+public class Webhook implements IWebhook {
 
     private static final String USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:49.0) Gecko/20100101 Firefox/49.0";
-    private final URL url;
+
     private final ServerchatAPI api;
+    private final URI url;
 
-    public Webhook(@NotNull String url, @NotNull ServerchatAPI api) throws MalformedURLException {
-        this.url = new URL(Objects.requireNonNull(url));
+    private final CloseableHttpClient httpClient;
+
+    public Webhook(@NotNull String url, @NotNull ServerchatAPI api) {
         this.api = Objects.requireNonNull(api);
-    }
 
-    private Optional<HttpURLConnection> connect() {
         try {
-            HttpURLConnection connection = (HttpURLConnection) this.url.openConnection();
-
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("User-Agent", USER_AGENT);
-            connection.setRequestProperty("Content-type", "application/json; charset=UTF-8");
-            connection.setDoOutput(true);
-            connection.setDoInput(true);
-
-            return Optional.of(connection);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            return Optional.empty();
+            this.url = new URI(Objects.requireNonNull(url));
+        } catch (URISyntaxException ex) {
+            throw new RuntimeException("Unable to parse URL", ex);
         }
+
+        RequestConfig config = RequestConfig.custom()
+                .setConnectTimeout(2000)
+                .setConnectionRequestTimeout(2000)
+                .setSocketTimeout(2000)
+                .setAuthenticationEnabled(false)
+                .setCircularRedirectsAllowed(false)
+                .build();
+
+        this.httpClient = HttpClients.custom()
+                .setUserAgent(USER_AGENT)
+                .setDefaultRequestConfig(config)
+                .build();
     }
 
-    public void sendMessage(@NotNull DiscordMessage message) {
+    @Override
+    public void sendMessage(@NotNull IDiscordMessage message) {
         Objects.requireNonNull(message);
 
-        Optional<HttpURLConnection> connection = this.connect();
-        if (!connection.isPresent()) {
-            this.api.error("Unable to connect to Discord!");
-            return;
-        }
-        HttpURLConnection discordConnection = connection.get();
+        String data = message.toJSON().toString();
+        byte[] payload = data.getBytes(StandardCharsets.UTF_8);
 
-        String payload = message.toJSON().toString();
-        byte[] encodedPayload = payload.getBytes(StandardCharsets.UTF_8);
-        discordConnection.setRequestProperty("Content-Length", String.valueOf(encodedPayload.length));
-        discordConnection.setConnectTimeout(1000);
-        discordConnection.setReadTimeout(1000);
+        HttpPost post = new HttpPost(this.url);
+        post.setEntity(new ByteArrayEntity(payload, ContentType.APPLICATION_JSON));
 
-        try {
-            DataOutputStream outputStream = new DataOutputStream(discordConnection.getOutputStream());
-            outputStream.write(encodedPayload);
-            outputStream.flush();
-            outputStream.close();
-        } catch (IOException ex) {
-            this.api.error("Unable to send message to Discord!");
-            return;
-        }
+        try (CloseableHttpResponse response = this.httpClient.execute(post)) {
 
-        try {
-            if (discordConnection.getResponseCode() != 200 && discordConnection.getResponseCode() != 204) {
-                this.api.error(String.format("Got response code %s from Discord!", discordConnection.getResponseCode()));
+            int responseCode = response.getStatusLine().getStatusCode();
+            if (responseCode != 200 && responseCode != 204) {
+                this.api.error(String.format("Got response code %s from Discord!", responseCode));
             }
+
+        } catch (ClientProtocolException ex) {
+            this.api.error("HTTP protocol error occurred");
         } catch (IOException ex) {
             this.api.error("Unable to connect to Discord!");
         }

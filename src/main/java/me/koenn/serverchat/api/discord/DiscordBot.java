@@ -1,12 +1,14 @@
 package me.koenn.serverchat.api.discord;
 
 import me.koenn.serverchat.api.ServerchatAPI;
-import net.dv8tion.jda.core.AccountType;
-import net.dv8tion.jda.core.JDA;
-import net.dv8tion.jda.core.JDABuilder;
-import net.dv8tion.jda.core.entities.*;
-import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
-import net.dv8tion.jda.core.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.jetbrains.annotations.NotNull;
 
 import javax.security.auth.login.LoginException;
@@ -27,10 +29,12 @@ public class DiscordBot extends ListenerAdapter {
         this.verifyToken = Objects.requireNonNull(verifyToken);
         this.api = Objects.requireNonNull(api);
         try {
-            this.jda = new JDABuilder(AccountType.BOT)
-                    .setToken(Objects.requireNonNull(discordToken))
-                    .setAudioEnabled(false)
-                    .setGame(Game.listening("to you!"))
+            this.jda = JDABuilder.createDefault(Objects.requireNonNull(discordToken))
+                    .setActivity(Activity.listening("to you!"))
+                    .setAutoReconnect(true)
+                    .setMaxReconnectDelay(500)
+                    .enableIntents(GatewayIntent.GUILD_MEMBERS)
+                    .setMemberCachePolicy(MemberCachePolicy.ALL)
                     .build().awaitReady();
             this.jda.addEventListener(this);
         } catch (LoginException e) {
@@ -42,12 +46,13 @@ public class DiscordBot extends ListenerAdapter {
 
     @Override
     public void onGuildMessageReceived(@NotNull GuildMessageReceivedEvent event) {
-        User author = event.getAuthor();
+        Member author = event.getMember();
+        User user = event.getAuthor();
         Guild guild = event.getGuild();
         Message message = event.getMessage();
         TextChannel channel = event.getChannel();
 
-        if (this.guild == 0 && author.getName().equals("VERIFY")) {
+        if (this.guild == 0 && user.getName().equals("VERIFY")) {
             String content = message.getContentRaw();
             String[] split = content.split(" ");
             String token = split[split.length - 1].trim();
@@ -58,9 +63,14 @@ public class DiscordBot extends ListenerAdapter {
             }
         }
 
-        if (guild.getIdLong() == this.guild && channel.getIdLong() == this.channel && !author.isBot()) {
-            Member member = guild.getMember(author);
-            String name = member.getNickname() == null ? author.getName() : member.getNickname();
+        if (guild.getIdLong() == this.guild && channel.getIdLong() == this.channel && !user.isBot()) {
+            String name;
+            if (author != null) {
+                name = author.getEffectiveName();
+            } else {
+                name = user.getName();
+            }
+
             this.api.userChat(name, message.getContentDisplay());
         }
     }
@@ -73,14 +83,16 @@ public class DiscordBot extends ListenerAdapter {
                 channel.getGuild().getName(), channel.getName()
         ));
         channel.sendMessage("**Connected to Minecraft server!**").queue();
+
+        channel.getGuild().loadMembers();
     }
 
-    public void updateStatus(@NotNull String format, @NotNull Game.GameType type, int playerCount) {
+    public void updateStatus(@NotNull String format, @NotNull Activity.ActivityType type, int playerCount) {
         if (this.jda != null) {
             String status = format.replace("{players}", String.valueOf(playerCount));
             if (!status.equals(this.status)) {
                 this.status = status;
-                this.jda.getPresence().setGame(Game.of(Objects.requireNonNull(type), this.status));
+                this.jda.getPresence().setActivity(Activity.of(Objects.requireNonNull(type), this.status));
             }
         }
     }

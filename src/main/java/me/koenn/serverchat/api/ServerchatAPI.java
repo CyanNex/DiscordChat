@@ -8,9 +8,9 @@ import me.koenn.serverchat.api.thread.IMessageThread;
 import me.koenn.serverchat.api.thread.MessageThread;
 import me.koenn.serverchat.api.util.IConfigManager;
 import me.koenn.serverchat.api.util.MessageCallback;
-import net.dv8tion.jda.core.entities.Game;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.TextChannel;
+import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -33,7 +33,7 @@ public class ServerchatAPI {
     private final String webhookURL;
     private final String discordToken;
     private final String discordStatusFormat;
-    private final Game.GameType discordStatusType;
+    private final Activity.ActivityType discordStatusType;
 
     private final IMessageThread messageThread = new MessageThread(this);
     private final MessageCallback gameMessageCallback;
@@ -52,7 +52,7 @@ public class ServerchatAPI {
         this.webhookURL = configManager.getString("webhook_url", "config");
         this.discordToken = configManager.getString("discord_token", "config");
         this.discordStatusFormat = configManager.getString("discord_status_format", "config");
-        this.discordStatusType = Game.GameType.valueOf(configManager.getString("discord_status_type", "config")
+        this.discordStatusType = Activity.ActivityType.valueOf(configManager.getString("discord_status_type", "config")
                 .toUpperCase().replace("PLAYING", "DEFAULT"));
 
         this.logger = Objects.requireNonNull(logger);
@@ -90,13 +90,16 @@ public class ServerchatAPI {
     public void playerChat(@NotNull String playerName, @NotNull UUID playerUUID, @NotNull String message) {
         String avatar = String.format("https://crafatar.com/avatars/%s?overlay", playerUUID);
         message = this.disableMentionAll ? message.replace("@everyone", "everyone").replace("@here", "here") : message;
-        TextChannel channel = this.bot.getJda().getGuildById(this.bot.getGuild()).getTextChannelById(this.bot.getChannel());
+        Guild guild = Objects.requireNonNull(this.bot.getJda().getGuildById(this.bot.getGuild()));
 
-        for (Member member : channel.getMembers()) {
-            String mention = "@" + member.getEffectiveName();
+        if (message.contains("@")) {
 
-            if (message.toLowerCase().contains(mention.toLowerCase())) {
-                message = message.replace(mention, member.getAsMention());
+            for (Member member : guild.getMembers()) {
+                String mention = "@" + member.getEffectiveName();
+
+                if (message.toLowerCase().contains(mention.toLowerCase())) {
+                    message = message.replace(mention, member.getAsMention());
+                }
             }
         }
 

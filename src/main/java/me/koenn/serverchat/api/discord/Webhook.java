@@ -69,8 +69,10 @@ public class Webhook implements IWebhook {
 
         } catch (ClientProtocolException ex) {
             this.api.error("HTTP protocol error occurred");
+            ex.printStackTrace();
         } catch (IOException ex) {
             this.api.error("Unable to connect to Discord!");
+            ex.printStackTrace();
         }
     }
 }

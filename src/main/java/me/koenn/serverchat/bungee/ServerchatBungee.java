@@ -2,8 +2,13 @@ package me.koenn.serverchat.bungee;
 
 import me.koenn.serverchat.api.ServerchatAPI;
 import me.koenn.serverchat.api.util.MessageCallback;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.ChatEvent;
 import net.md_5.bungee.api.event.PlayerDisconnectEvent;
@@ -16,6 +21,7 @@ import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
 import net.md_5.bungee.event.EventHandler;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -99,8 +105,19 @@ public final class ServerchatBungee extends Plugin implements Listener, MessageC
     }
 
     @Override
-    public void message(@NotNull String message) {
-        ProxyServer.getInstance().broadcast(new TextComponent(message));
+    public void message(@NotNull String message, @Nullable String attachmentURL) {
+        if (attachmentURL != null) {
+            ProxyServer.getInstance().broadcast(
+                    new ComponentBuilder(message)
+                            .append(" [Attachment]")
+                            .event(new ClickEvent(ClickEvent.Action.OPEN_URL, attachmentURL))
+                            .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to open")))
+                            .color(ChatColor.BLUE)
+                            .create()
+            );
+        } else {
+            ProxyServer.getInstance().broadcast(new TextComponent(message));
+        }
     }
 
     private void updatePlayerCount() {

@@ -12,6 +12,7 @@ import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -149,11 +150,11 @@ public class ServerchatAPI {
         }
     }
 
-    public void userChat(@NotNull String userName, @NotNull String message) {
+    public void userChat(@NotNull String userName, @NotNull String message, @Nullable String attachmentURL) {
         String formatted = this.minecraftMessageFormat
                 .replace("{user}", userName)
                 .replace("{message}", stripColor(message));
-        this.gameMessageCallback.message(formatted);
+        this.gameMessageCallback.message(formatted, attachmentURL);
     }
 
     public void error(@NotNull String message) {

@@ -8,7 +8,6 @@ import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
-import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.jetbrains.annotations.NotNull;
 
 import javax.security.auth.login.LoginException;
@@ -71,7 +70,12 @@ public class DiscordBot extends ListenerAdapter {
                 name = user.getName();
             }
 
-            this.api.userChat(name, message.getContentDisplay());
+            String attachmentURL = null;
+            if (!message.getAttachments().isEmpty()) {
+                attachmentURL = message.getAttachments().get(0).getUrl();
+            }
+
+            this.api.userChat(name, message.getContentDisplay(), attachmentURL);
         }
     }
 

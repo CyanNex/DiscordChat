@@ -14,6 +14,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.concurrent.Executors;
@@ -83,7 +84,7 @@ public final class ServerchatBukkit extends JavaPlugin implements Listener, Mess
     }
 
     @Override
-    public void message(@NotNull String message) {
+    public void message(@NotNull String message, @Nullable String attachmentURL) {
         Bukkit.broadcastMessage(message);
     }
 
